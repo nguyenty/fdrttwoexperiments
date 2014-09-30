@@ -122,17 +122,26 @@ BH = function(p.values, alpha=.05)
 }
 ## Calculate voronoi area for each genes in each simulation data set
 voronoi <- apply(ps, 2, function(x) CombineVoronoi(x.values=x[1:ms], y.values=x[(ms+1):(2*ms)]))
+str(voronoi[[100]])
+library(plyr)
+VSRvoronoi <- laply(1:n.rep, function(i) {
+  d <- as.data.frame(cbind(voronoi[[i]][[1]], voronoi[[i]][[2]]))
+  dd <- (arrange(d, V1)) # rearrange the gene as the original order 1, 2, 3, ,,,
+  
+  bh <- BH(dd[,2])
+  R.t <- bh$k
+  S.t <- sum(bh$index <=de)
+  V.t <- R.t - S.t
+  return(c(V.t = V.t, S.t = S.t, R.t = R.t))
+  })
 
 
-Vmaxs <- apply(qmaxs[1:(ms-m11s),], 2, function(x) sum(x <= 0.05))
-Rmaxs <- apply(qmaxs, 2, function(x) sum(x <= 0.05))
-Smaxs <- Rmaxs - Vmaxs
-FDRmaxs <- apply(cbind(Vmaxs, Rmaxs), 1, function(x) x[1]/max(x[2],1))
+FDRvoronoi <- apply(VSRvoronoi[,c(1,3)], 1, function(x) x[1]/max(x[2],1))
 
 ##mean number of true discoveries (mean S)
-meanSmaxs <- mean(Smaxs)
-seSmaxs <- sd(Smaxs)/sqrt(nreps)
+meanFDRvoronoi <- mean(FDRvoronoi)
+seFDRvoronoi <- sd(FDRvoronoi)/sqrt(n.rep)
 
-##mean observed FDR
-meanFDRmaxs <- mean(FDRmaxs) 
-seFDRmaxs <- sd(FDRmaxs)/sqrt(nreps)
+##power of the procedure #####
+powerFDRvoronoi <- VSRvoronoi[,2]/de
+mean(powerFDRvoronoi)
