@@ -12,7 +12,7 @@ library(mixfdr)
 library(MASS)
 
 
-d#-------------------------------------------------------------------------------------#
+#-------------------------------------------------------------------------------------#
 #     PART 1. Functions needed for Voronoi P-value Combination
 #-------------------------------------------------------------------------------------#
 
@@ -265,7 +265,7 @@ print.xtable(xtable(ndr.mod.means,digits=3))
 # ---------------------------# Strong alternative simulation #------------------------------------- #
 
 mualt <- 4 #set mean of alternative signals
-Pstrong <- 1000 Set penalization factor to pass to mixFdr
+Pstrong <- 1000# Set penalization factor to pass to mixFdr
 
 #initialize matrices to store results
 fdr.strong.results = ndr.strong.results = matrix(NA,length(rho),7)
