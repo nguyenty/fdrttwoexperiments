@@ -21,7 +21,7 @@ library(MASS)
 #           rankind scheme 
 #-------------------------------------------------------------------------------------#
 
-CombineVoronoi = function(x.values,y.values,ranking=1){
+CombineVoronoi = function(x.values,y.values,ranking=1){ # x.values = ps[1:n,1]; y.values = ps[n+1:n,1]
   
   my.data = cbind(x.values,y.values)
   #get voronoi tessellation and extract cell areas for each p-vector
