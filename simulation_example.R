@@ -1,4 +1,4 @@
-
+library(plyr)
 source("normal_sim_pvalues.R")
 source("micro_sim_pvalues.R")
 source("qvalue_functions.R")
@@ -7,7 +7,7 @@ source("qvalue_functions.R")
 ##Different combinations of the following values were used to create
 ##the different simulation settings.
   ##ni = 4, 10, 20
-  ##mv = c(3000,2000,2000,3000), c(5000, 1500, 1500, 2000), 
+  ##mv = c(3000,2000,2000,3000), c(5000, 1500, 1500, 2000), ## m00, m01, m10, m11
   ##     c(7000,1000,1000,1000), c(9000,250,250,500)
   ##mnd = 1, 2
 
@@ -74,18 +74,7 @@ source("qvalue_functions.R")
 
     ##mean observed FDR
     meanFDRints <- mean(FDRints)
-    seFDRints <- sd(FDRints)/sqrt(nrep)
-
-
-
-
-
-
-
-  
- 
-
-
+    seFDRints <- sd(FDRints)/sqrt(nreps)
 
 
 ############################################################################
