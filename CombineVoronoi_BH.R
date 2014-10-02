@@ -1,5 +1,4 @@
 library(deldir)
-library(mixfdr)
 library(MASS)
 
 
@@ -50,6 +49,7 @@ CombineVoronoi = function(x.values,y.values,ranking=1){
 #          index (Vector) = indices of rejected hypothesis in relation to original 
 #                           vector of p-values
 #-------------------------------------------------------------------------------------#
+
 BH = function(p.values, alpha=.05)
 {
   n = length(p.values)
