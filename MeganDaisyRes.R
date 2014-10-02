@@ -78,7 +78,7 @@ megan_ints_out <- function(ps, mv){
 
 
 
-megan_voronoi_out <- function(ps, mv){ # dim(ps)
+megan_voronoi_out <- function(ps, mv){ # dim(ps) mv <- mvs
   n <- dim(ps)[1]/2; n.rep <- dim(ps)[2]; de <- mv[4]; ee <- n - de
   voronoi <- apply(ps, 2, function(x) CombineVoronoi(x.values=x[1:n], y.values=x[(n+1):(2*n)]))
   res <- t(laply(1:n.rep, function(i) { # i <- 1

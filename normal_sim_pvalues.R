@@ -215,7 +215,7 @@ normal_sim_pvalues <- function(ni, d0, s20, mv, mnd, nrep){
     ##Add p-values to p-values matrix from previous replications.
     pmat <- cbind(pmat, c(ps1, ps2))
 
-    if(rep%%10 == 0){print(paste("REPLICATION", rep, "IS COMPLETE"))}
+#     if(rep%%10 == 0){print(paste("REPLICATION", rep, "IS COMPLETE"))}
 
   }
 

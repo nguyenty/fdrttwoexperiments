@@ -2,21 +2,21 @@
 ## Gosh simulation set up ######
 ## independent the same mu_i, variance = 1, 2000 genes. 
 
-library(plyr)
+
 source("CombineVoronoi_BH.R")
 source("estimate_m0s_fn.R")
 source("qvalue_functions.R")
-source("SimulationPvalue_Phillips.R")
-source("MeganPhillipsRes.R")
+source("SimulationPvalue_Daisy.R")
+source("MeganDaisyRes.R")
+source("normal_sim_pvalues.R")
 
 
-
-simvoronoi <- function(n,pi0,mu_a, n.rep){
-  ps <- sim.pvalue(n, pi0, mu_a, n.rep) 
-  intsout <- ints_out(ps,pi0)
-  voronoiout <- voronoi_out(ps, pi0)
-  output <- rbind(Megan= intsout, Phillips = voronoiout)
-  print(paste0("n_",n, "pi0_", pi0, "mua_", mu_a, "nrep_", n.rep))
+simdaisy <- function(n,pi0,mu_a, nrep){
+  ps <- daisy.pvalue(n, pi0, mu_a, nrep) 
+  intsout <- daisy_ints_out(ps,pi0)
+  voronoiout <- daisy_voronoi_out(ps, pi0)
+  output <- rbind(Megan= intsout, Daisy = voronoiout)
+  print(paste0("n_",n, "pi0_", pi0, "mua_", mu_a, "nrep_", nrep))
   output
 }
 
@@ -24,6 +24,30 @@ simvoronoi <- function(n,pi0,mu_a, n.rep){
 
 
 n <- c(2000, 5000, 10000)
-pi0 <- c(0.95, 0.8, 0.6 )
+pi0 <- c(0.95, 0.9, 0.6 )
 mu_a <- c(1, 2, 4)
-#simvoronoi(n=1000, pi0=0.9, mu_a=1, n.rep =20)
+#simvoronoi(n=5000, pi0=0.9, mu_a=4, nrep =4)
+
+
+## Megan Simulation normal simulation data######
+nis <- c(4, 10, 20)
+mvs <- list(c(9000, 250, 250, 500), 
+            c(7000, 1000, 1000, 1000), 
+            c(5000, 1500, 1500, 2000), 
+            c(3000,2000,2000,3000)
+mnds <- c(1, 2)
+nrep <- 100
+
+
+# nis <- 10; mvs <- c(400,500,400,500); mnds <- 2; nreps <- 10
+simmegan <- function(nis, mvs, mnds, nreps){
+  ps <- normal_sim_pvalues(ni=nis, d0=3.637578, s20=0.04040928, 
+                           mv=mvs, mnd=mnds, nrep=nreps)
+  intsout <- megan_ints_out(ps,mvs)
+  voronoiout <- megan_voronoi_out(ps, mvs)
+  output <- rbind(Megan= intsout, daisy = voronoiout)
+  print(paste0("Megan_", "ni_",nis,"m11_", mvs[4],  "mnds_", mnds, "nrep_", nreps))
+  output
+}
+
+simmegan(nis, mvs, mnds, nreps)
