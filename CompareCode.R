@@ -17,7 +17,7 @@ simdaisy <- function(n,pi0,mu_a, nrep){
   voronoiout <- daisy_voronoi_out(ps, pi0)
   output <- rbind(Megan= intsout, Daisy = voronoiout)
   print(paste0("n_",n, "pi0_", pi0, "mua_", mu_a, "nrep_", nrep))
-  path <- paste0("phillips_","n_",n, "pi0_", pi0, "mua_", mu_a, "nrep_", n.rep, "_out.csv" )
+  path <- paste0("phillips_","n_",n, "pi0_", pi0, "mua_", mu_a, "nrep_", nrep, "_out.csv" )
   write.csv(output, file = path, row.names = F)
   output
 }
