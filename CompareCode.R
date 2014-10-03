@@ -42,12 +42,12 @@ nis <- c(4, 10, 20)
 mvs <- list(c(9000, 250, 250, 500), 
             c(7000, 1000, 1000, 1000), 
             c(5000, 1500, 1500, 2000), 
-            c(3000,2000,2000,3000)
+            c(3000,2000,2000,3000))
 mnds <- c(1, 2)
 nrep <- 100
 
 
-# nis <- 10; mvs <- c(400,500,400,500); mnds <- 2; nreps <- 10
+# nis <- 10; mvs <- c(3000,2000,2000,3000); mnds <- 2; nreps <- 5
 simmegan <- function(nis, mvs, mnds, nreps){
   ps <- normal_sim_pvalues(ni=nis, d0=3.637578, s20=0.04040928, 
                            mv=mvs, mnd=mnds, nrep=nreps)
@@ -55,6 +55,8 @@ simmegan <- function(nis, mvs, mnds, nreps){
   voronoiout <- megan_voronoi_out(ps, mvs)
   output <- rbind(Megan= intsout, daisy = voronoiout)
   print(paste0("Megan_", "ni_",nis,"m11_", mvs[4],  "mnds_", mnds, "nrep_", nreps))
+  path <- paste0("Megan_","ni_",nis, "m11_", mvs[4], "mnds_", mnds, "nrep_", nreps, "_out.csv" )
+  write.csv(output, file = path, row.names = F)
   output
 }
 
