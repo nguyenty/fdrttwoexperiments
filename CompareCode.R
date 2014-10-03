@@ -38,13 +38,6 @@ for(i in 1:3){
 
 
 ## Megan Simulation normal simulation data######
-nis <- c(4, 10, 20)
-mvs <- list(c(9000, 250, 250, 500), 
-            c(7000, 1000, 1000, 1000), 
-            c(5000, 1500, 1500, 2000), 
-            c(3000,2000,2000,3000))
-mnds <- c(1, 2)
-nrep <- 100
 
 
 # nis <- 10; mvs <- c(3000,2000,2000,3000); mnds <- 2; nreps <- 5
@@ -60,4 +53,17 @@ simmegan <- function(nis, mvs, mnds, nreps){
   output
 }
 
-simmegan(nis, mvs, mnds, nreps)
+
+nis <- c(4, 10, 20)
+mvs <- list(c(9000, 250, 250, 500), 
+            c(7000, 1000, 1000, 1000), 
+            c(5000, 1500, 1500, 2000), 
+            c(3000,2000,2000,3000))
+mnds <- c(1, 2)
+nreps <- 100
+
+for(i in 1:3){
+  for(j in 1:4){
+    for (k in 1:2) simmegan(nis[i], mvs[[j]], mnds[k], nreps)
+  }
+}
