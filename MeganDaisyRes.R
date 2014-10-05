@@ -77,9 +77,6 @@ megan_ints_out <- function(ps, mv){
 }
 
 
-par(mfrow = c(3,4))
-for(i in 1:n.rep)hist(ps[,i])
-dev.off()
 
 megan_voronoi_out <- function(ps, mv){ # dim(ps) mv <- mvs
   n <- dim(ps)[1]/2; n.rep <- dim(ps)[2]; de <- mv[4]; ee <- n - de

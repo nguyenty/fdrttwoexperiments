@@ -1,5 +1,5 @@
 library(deldir)
-library(mixfdr)
+#library(mixfdr)
 library(MASS)
 
 
