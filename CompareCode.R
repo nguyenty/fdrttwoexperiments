@@ -29,6 +29,13 @@ n <- c(2000, 5000, 10000)
 pi0 <- c(0.95, 0.9, 0.8, 0.7 )
 mu_a <- c(1, 2, 3, 4)
 
+for(i in 3){
+  for(j in 4){
+    for(k in 4)simdaisy(n[i], pi0[j], mu_a[k], 100)
+  }
+}
+
+
 for(i in 1:3){
   for(j in 1:4){
     for(k in 1:4)simdaisy(n[i], pi0[j], mu_a[k], 100)
@@ -62,7 +69,7 @@ mvs <- list(c(9000, 250, 250, 500),
 mnds <- c(1, 2)
 nreps <- 100
 
-for(i in 1:3){
+for(i in 2:3){
   for(j in 1:4){
     for (k in 1:2) simmegan(nis[i], mvs[[j]], mnds[k], nreps)
   }
