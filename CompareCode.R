@@ -16,31 +16,33 @@ simdaisy <- function(n,pi0,mu_a, nrep){
   intsout <- daisy_ints_out(ps,pi0)
   voronoiout <- daisy_voronoi_out(ps, pi0)
   output <- rbind(Megan= intsout, Daisy = voronoiout)
+  row.names(output) <- c(paste0("n_",n, "pi0_", pi0, "mua_", mu_a, "nrep_", nrep, "_Megan"), 
+                         paste0("n_",n, "pi0_", pi0, "mua_", mu_a, "nrep_", nrep, "_Daisy"))
   print(paste0("n_",n, "pi0_", pi0, "mua_", mu_a, "nrep_", nrep))
   path <- paste0("phillips_","n_",n, "pi0_", pi0, "mua_", mu_a, "nrep_", nrep, "_out.csv" )
-  write.csv(output, file = path, row.names = F)
+  #write.csv(output, file = path, row.names = F)
   output
 }
 
 
 
 
-n <- c(2000, 5000, 10000)
-pi0 <- c(0.95, 0.9, 0.8, 0.7 )
-mu_a <- c(1, 2, 3, 4)
+n <- c(2000, 4000)
+pi0 <- c(0.95, 0.9,  0.8 )
+mu_a <- c(1, 2, 4, 5)
 
-for(i in 3){
-  for(j in 4){
-    for(k in 4)simdaisy(n[i], pi0[j], mu_a[k], 100)
+df <- data.frame(Date=as.Date(character()),
+                 File=character(), 
+                 User=character(), 
+                 stringsAsFactors=FALSE) 
+
+for(i in 1:2){
+  for(j in 1:3){
+    for(k in 1:4) dd <- simdaisy(n[i], pi0[j], mu_a[k], 50) # n<- 500; i <- 1; pi0 <- 0.95; j <- 3; mu_a <- 4; k <- 4
+    df <- rbind(dd, df)
   }
 }
 
-
-for(i in 1:3){
-  for(j in 1:4){
-    for(k in 1:4)simdaisy(n[i], pi0[j], mu_a[k], 100)
-  }
-}
 #simvoronoi(n=5000, pi0=0.9, mu_a=4, nrep =4)
 
 
@@ -54,23 +56,28 @@ simmegan <- function(nis, mvs, mnds, nreps){
   intsout <- megan_ints_out(ps,mvs)
   voronoiout <- megan_voronoi_out(ps, mvs)
   output <- rbind(Megan= intsout, daisy = voronoiout)
+  row.names(output) <- c(paste0("Megan_", "ni_",nis,"m11_", mvs[4],  "mnds_", mnds, "nrep_", nreps, "_Megan"), 
+                         paste0("Megan_", "ni_",nis,"m11_", mvs[4],  "mnds_", mnds, "nrep_", nreps, "_Daisy"))
   print(paste0("Megan_", "ni_",nis,"m11_", mvs[4],  "mnds_", mnds, "nrep_", nreps))
   path <- paste0("Megan_","ni_",nis, "m11_", mvs[4], "mnds_", mnds, "nrep_", nreps, "_out.csv" )
-  write.csv(output, file = path, row.names = F)
+  #write.csv(output, file = path, row.names = F)
   output
 }
 
 
 nis <- c(4, 10, 20)
-mvs <- list(c(9000, 250, 250, 500), 
-            c(7000, 1000, 1000, 1000), 
-            c(5000, 1500, 1500, 2000), 
-            c(3000,2000,2000,3000))
+mvs <- list(c(9000, 250, 250, 500)/5, 
+            c(7000, 1000, 1000, 1000)/5, 
+            c(5000, 1500, 1500, 2000)/5, 
+            c(3000,2000,2000,3000)/5)
 mnds <- c(1, 2)
-nreps <- 100
+nreps <- 50
 
-for(i in 2:3){
+for(i in 1:3){
   for(j in 1:4){
-    for (k in 1:2) simmegan(nis[i], mvs[[j]], mnds[k], nreps)
+    for (k in 1:2) dd <- simmegan(nis[i], mvs[[j]], mnds[k], nreps)
+    df <- rbind(dd, df)
   }
 }
+
+df
