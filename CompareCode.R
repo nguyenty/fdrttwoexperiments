@@ -27,22 +27,24 @@ simdaisy <- function(n,pi0,mu_a, nrep){
 
 
 
-n <- c(2000, 4000)
-pi0 <- c(0.95, 0.9,  0.8 )
-mu_a <- c(1, 2, 4, 5)
-
+n <- c(2000)
+pi0 <- c(0.9,  0.8 )
+mu_a <- c(1, 2, 4)
+nrep <- 50
 df <- data.frame(Date=as.Date(character()),
                  File=character(), 
                  User=character(), 
                  stringsAsFactors=FALSE) 
 
-for(i in 1:2){
-  for(j in 1:3){
-    for(k in 1:4) dd <- simdaisy(n[i], pi0[j], mu_a[k], 50) # n<- 500; i <- 1; pi0 <- 0.95; j <- 3; mu_a <- 4; k <- 4
-    df <- rbind(dd, df)
+for(i in 1){
+  for(j in 1:2){
+    for(k in 1:3) {
+      dd <- simdaisy(n[i], pi0[j], mu_a[k], nrep) # n<- 500; i <- 1; pi0 <- 0.95; j <- 3; mu_a <- 4; k <- 4
+    df <- rbind(dd, df)}
   }
 }
 
+write.csv(df, file ="DaisySim.csv", row.names = T)
 #simvoronoi(n=5000, pi0=0.9, mu_a=4, nrep =4)
 
 
@@ -65,19 +67,20 @@ simmegan <- function(nis, mvs, mnds, nreps){
 }
 
 
-nis <- c(4, 10, 20)
+nis <- c(4, 10)
 mvs <- list(c(9000, 250, 250, 500)/5, 
-            c(7000, 1000, 1000, 1000)/5, 
-            c(5000, 1500, 1500, 2000)/5, 
-            c(3000,2000,2000,3000)/5)
+            c(5000, 1500, 1500, 2000)/5)
 mnds <- c(1, 2)
 nreps <- 50
 
-for(i in 1:3){
-  for(j in 1:4){
-    for (k in 1:2) dd <- simmegan(nis[i], mvs[[j]], mnds[k], nreps)
-    df <- rbind(dd, df)
+for(i in 1:2){ # i <- 1
+  for(j in 1:2){
+    for (k in 1:2) {
+      dd <- simmegan(nis[i], mvs[[j]], mnds[k], nreps)
+    df <- rbind(dd, df)}
   }
 }
 
 df
+
+write.csv(df, file ="MeganDaisySim.csv", row.names = T)
