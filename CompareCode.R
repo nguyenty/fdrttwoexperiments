@@ -73,7 +73,7 @@ mvs <- list(c(9000, 250, 250, 500)/5,
 mnds <- c(1, 2)
 nreps <- 50
 
-for(i in 1:2){ # i <- 1
+for(i in 1:2){ # i <- 2
   for(j in 1:2){
     for (k in 1:2) {
       dd <- simmegan(nis[i], mvs[[j]], mnds[k], nreps)
@@ -83,4 +83,10 @@ for(i in 1:2){ # i <- 1
 
 df
 
-write.csv(df, file ="MeganDaisySim.csv", row.names = T)
+write.csv(df, file ="MeganSim.csv", row.names = T)
+daisy_sim <- read.csv("DaisySim.csv")
+?read.csv
+row.names(daisy_sim) <- daisy_sim[,1]
+megandaisy_sim <- rbind(df, daisy_sim[,-1])
+write.csv(megandaisy_sim, "MeganDaisySim.csv", row.names = T)
+
