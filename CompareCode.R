@@ -7,6 +7,7 @@ source("CombineVoronoi_BH.R")
 source("estimate_m0s_fn.R")
 source("qvalue_functions.R")
 source("SimulationPvalue_Daisy.R")
+source("SimulationPvalue_Phillips.R")
 source("MeganDaisyRes.R")
 source("normal_sim_pvalues.R")
 
@@ -47,6 +48,10 @@ for(i in 1){
 write.csv(df, file ="DaisySim.csv", row.names = T)
 #simvoronoi(n=5000, pi0=0.9, mu_a=4, nrep =4)
 
+
+
+
+#simvoronoi(n=5000, pi0=0.9, mu_a=4, nrep =4)
 
 ## Megan Simulation normal simulation data######
 
@@ -90,3 +95,42 @@ row.names(daisy_sim) <- daisy_sim[,1]
 megandaisy_sim <- rbind(df, daisy_sim[,-1])
 write.csv(megandaisy_sim, "MeganDaisySim.csv", row.names = T)
 
+
+
+
+## simmegan2
+
+
+simmegan2 <- function(mvs,mu_a,nrep){
+  ps <- megan.pvalue2(mvs, mu_a, nrep) 
+  intsout <- megan_ints_out(ps,mvs)
+  voronoiout <- megan_voronoi_out(ps, mvs)
+  output <- rbind(Megan= intsout, daisy = voronoiout)
+  row.names(output) <- c(paste0("Megan2_", "m", sum(mvs), "m11_", mvs[4], "mua", mu_a, "nrep_", nrep, "_Megan"), 
+                         paste0("Megan2_", "m", sum(mvs),"m11_", mvs[4],"mua", mu_a,  "nrep_", nrep, "_Daisy"))
+  print(paste0("Daisy_","m11_", mvs[4],"nrep_", nrep))
+  path <- paste0("Daisy_", "m11_", mvs[4], "nrep_", nrep, "_out.csv" )
+  #write.csv(output, file = path, row.names = F)
+  output
+}
+
+mvs <- list(c(1000, 300, 300, 400),
+            c(1600, 100, 100, 200)
+            )
+mu_a <- c(1,2,4, 5)
+nrep <- 50
+
+df <- data.frame(Date=as.Date(character()),
+                 File=character(), 
+                 User=character(), 
+                 stringsAsFactors=FALSE) 
+for(i in 1:length(mvs)){ # i <- 2
+  for(j in 1:length(mu_a)){
+    dd <- simmegan2(mvs[[i]],mu_a[j], nrep )
+    df <- rbind(dd, df)}
+}
+}
+
+df
+
+write.csv(df, file ="Megan2Sim.csv", row.names = T)

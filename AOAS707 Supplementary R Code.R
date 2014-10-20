@@ -33,7 +33,7 @@ library(MASS)
 
 CombineVoronoi = function(x.values,y.values,ranking=1){
   
-  my.data = cbind(x.values,y.values)
+  my.data = cbind(x.values,y.values) #x.values <- ps[1:n, 1]; y.values <- ps[n+1:n, 1]; ranking = 1
   #get voronoi tessellation and extract cell areas for each p-vector
   areas = deldir(x.values,y.values,rw=c(0,1,0,1),digits=20,eps=1e-13) #Get Voronoi tessellation
   tess.areas = areas$summary$dir.area #extract cell areas 
@@ -46,8 +46,7 @@ CombineVoronoi = function(x.values,y.values,ranking=1){
   if(ranking==4){distance = apply(my.data,1,function(x){prod(x)*(1+(x[1]/.001)^2)*(1+(x[2]/.001)^2)})} #4: de lichtenberg
   
   mrank = sort(distance,index.return=T)$ix #rank p-vectors according to the distances
-  csum = cumsum(tess.areas[mrank]) #find cumulative sums
-  
+  csum = cumsum(tess.areas[mrank])/sum(tess.areas) #find cumulative sums sum((areas$summary$dir.area))
   return(list(index=mrank,cumareas=csum)) 
 }
 

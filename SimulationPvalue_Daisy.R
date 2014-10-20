@@ -21,3 +21,22 @@ daisy.pvalue <-function(n, pi0, mu_a, n.rep){
 )
 }
 
+
+
+megan.pvalue2 <-function(mv,  mu_a, n.rep){
+  n <- sum(mv)
+  ee <- sum(mv[1:3])
+  de <- n - ee
+  sapply(1:n.rep, function(i){
+    tvalue.m00 <- mvrnorm(n = mv[1], mu = c(0,0), Sigma = diag(1,2))
+    tvalue.m10 <- mvrnorm(n = mv[2], mu = c(mu_a,0), Sigma = diag(1,2))
+    tvalue.m01 <- mvrnorm(n = mv[3], mu = c(0,mu_a), Sigma = diag(1,2))
+    tvalue.m11 <- mvrnorm(n = mv[4], mu = c(mu_a,mu_a), Sigma = diag(1,2))
+    t.value = rbind(tvalue.m00, tvalue.m10, tvalue.m01, tvalue.m11)
+    p.value <- apply(t.value, c(1,2), function(x) 2*(1 - pnorm(abs(x))) )
+    return(c(p.value[,1], p.value[,2]))
+    path <- paste0("Megan2_","n_",n, "pi0_", pi0, "mua_", mu_a, "nrep_", n.rep, ".csv" )
+    write.csv(p.value, file = path, row.names = F)
+  }
+  )
+}
