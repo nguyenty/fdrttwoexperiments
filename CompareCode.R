@@ -108,8 +108,8 @@ simmegan2 <- function(mvs,mu_a,nrep){
   output <- rbind(Megan= intsout, daisy = voronoiout)
   row.names(output) <- c(paste0("Megan2_", "m", sum(mvs), "m11_", mvs[4], "mua", mu_a, "nrep_", nrep, "_Megan"), 
                          paste0("Megan2_", "m", sum(mvs),"m11_", mvs[4],"mua", mu_a,  "nrep_", nrep, "_Daisy"))
-  print(paste0("Daisy_","m11_", mvs[4],"nrep_", nrep))
-  path <- paste0("Daisy_", "m11_", mvs[4], "nrep_", nrep, "_out.csv" )
+  print(paste0("Megan_","m11_", mvs[4],"mua_", mu_a, "nrep_", nrep))
+  path <- paste0("Megan_", "m11_", mvs[4],"mua_", mu_a, "nrep_", nrep, "_out.csv" )
   #write.csv(output, file = path, row.names = F)
   output
 }
