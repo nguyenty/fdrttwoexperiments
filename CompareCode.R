@@ -117,7 +117,7 @@ simmegan2 <- function(mvs,mu_a,nrep){
 mvs <- list(c(1000, 300, 300, 400),
             c(1600, 100, 100, 200)
             )
-mu_a <- c(1,2,4, 5)
+mu_a <- c(1,2,4)
 nrep <- 50
 
 df <- data.frame(Date=as.Date(character()),
