@@ -10,7 +10,7 @@
 library(deldir)
 library(mixfdr)
 library(MASS)
-
+library(xtable)
 
 #-------------------------------------------------------------------------------------#
 #     PART 1. Functions needed for Voronoi P-value Combination
@@ -485,7 +485,7 @@ for(i in 0:8){
 
 #print the tables
 print.xtable(xtable(fdr.means,digits=3))
-print.xtable(xtable(ndr.test.means,digits=3))
+print.xtable(xtable(ndr.means,digits=3))
 
 
 
