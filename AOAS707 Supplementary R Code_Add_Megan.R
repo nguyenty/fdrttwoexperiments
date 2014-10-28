@@ -391,7 +391,8 @@ simtesthalfnull = function(cum.areas,index,p=.1,p1=.1,p2=.1,alpha=.05,myJ=2,nnul
 
 
 # Preamble for all simulations with positive correllation
-rho = rep(seq(from=0,to=.8,by=.1),each=100)
+#rho = rep(seq(from=0,to=.8,by=.1),each=100)
+rho <- rep(0, 100)
 n = 2000 #number of genes for each data set
 p = .1 # number of true alternative signals (alt,alt)
 p1 = .1 #proportion of p-vectors (alt, null)
@@ -400,24 +401,26 @@ n1 = p*n #number of p-vectors (alt, alt) m11
 n11 = p1*n #number of p-vectors (alt, null) m10
 n12 = p2*n #number of p-vectors (null, alt) m01
 n0 = n*(1-p-p1-p2) # number of null p-vectors m00
-mualt = 1 #mean of alternative signal
+mualt = 3 #mean of alternative signal
 
 # --------------------------# SUPPLEMENTARY 1 #------------------------------------- #
 # Simulation where mualt=3, and 10% are halfnull  (3,0), 10% are halfnull (0,3) #
- 
+
 #initialize matrices to store results
-fdr.test.results = ndr.test.results = matrix(NA,900,6)
-all.null.results = half.null.results = matrix(NA,900,6)
-colnames(fdr.test.results) = c("rho","M.FDR","E.FDR","S.FDR","DL.FDR","Ex.FDR")
-colnames(ndr.test.results) = c("rho","M.NDR","E.NDR","S.NDR", "DL.NDR","Ex.NDR")
-colnames(all.null.results) = c("rho","M.allFDR","E.allFDR","S.allFDR","DL.allFDR","Ex.allFDR")
-colnames(half.null.results) = c("rho","M.halfFDR","E.halfFDR","S.halfFDR", "DL.halfFDR","Ex.halfFDR")
-fdr.test.results[,1] = ndr.test.results[,1] = rho
-all.null.results[,1] = half.null.results[,1] = rho
 
 PMod=800
 pmat <- NULL
 mvs <- c(n0, n12, n11, n1)
+simout <- function(mualt){
+  fdr.test.results = ndr.test.results = matrix(NA,100,6)
+  all.null.results = half.null.results = matrix(NA,100,6)
+  colnames(fdr.test.results) = c("rho","M.FDR","E.FDR","S.FDR","DL.FDR","Ex.FDR")
+  colnames(ndr.test.results) = c("rho","M.NDR","E.NDR","S.NDR", "DL.NDR","Ex.NDR")
+  colnames(all.null.results) = c("rho","M.allFDR","E.allFDR","S.allFDR","DL.allFDR","Ex.allFDR")
+  colnames(half.null.results) = c("rho","M.halfFDR","E.halfFDR","S.halfFDR", "DL.halfFDR","Ex.halfFDR")
+  fdr.test.results[,1] = ndr.test.results[,1] = rho
+  all.null.results[,1] = half.null.results[,1] = rho
+  
 for(i in 1:100)
   {
     #get data
@@ -482,28 +485,58 @@ for(i in 1:100)
 }
 
 # get tables of means
-fdr.means = ndr.means = all.null.fdr.means = half.null.fdr.means = matrix(NA,9,6)
-colnames(fdr.means) = colnames(ndr.means) = c("rho","Maximum","Euclidean","Summation","De Lichtenberg","Existing")
-colnames(all.null.fdr.means) = colnames(half.null.fdr.means) = c("rho","Maximum","Euclidean","Summation","De Lichtenberg","Existing")
+fdr.means = ndr.means = all.null.fdr.means = half.null.fdr.means = rep(0, 6)
+names(fdr.means) = names(ndr.means) = c("rho","Maximum","Euclidean","Summation","De Lichtenberg","Existing")
+names(all.null.fdr.means) = names(half.null.fdr.means) = c("rho","Maximum","Euclidean","Summation","De Lichtenberg","Existing")
+# 
+# for(i in 0){
+#   temp.low = 100*i+1;   temp.high = 100*(i+1)
+#   ndr.means[i+1,] = apply(ndr.test.results[temp.low:temp.high,],2,mean)
+#   fdr.means[i+1,] = apply(fdr.test.results[temp.low:temp.high,],2,mean)
+#   all.null.fdr.means[i+1,] = apply(all.null.results[temp.low:temp.high,],2,mean)
+#   half.null.fdr.means[i+1,] = apply(half.null.results[temp.low:temp.high,],2,mean)
+# }
 
-for(i in 0){
-  temp.low = 100*i+1;   temp.high = 100*(i+1)
-  ndr.means[i+1,] = apply(ndr.test.results[temp.low:temp.high,],2,mean)
-  fdr.means[i+1,] = apply(fdr.test.results[temp.low:temp.high,],2,mean)
-  all.null.fdr.means[i+1,] = apply(all.null.results[temp.low:temp.high,],2,mean)
-  half.null.fdr.means[i+1,] = apply(half.null.results[temp.low:temp.high,],2,mean)
-}
 
-fdr.means[1,]
-ndr.means[1,]*n1
+
+ndr.means <- apply(ndr.test.results*n11,2,mean)
+ndr.se <- apply(ndr.test.results*n11,2,sd)/10
+fdr.means <-  apply(fdr.test.results,2,mean)
+fdr.se <-  apply(fdr.test.results,2,sd)/10
+out1 <- cbind(ndr.means, ndr.se, fdr.means, fdr.se)
+rownames(out1) <- c("rho", "Maximum", "Euclidean", "Summation", "De Lichtenberg", "Existing")
+# all.null.fdr.means <- apply(all.null.results,2,mean)
+# half.null.fdr.means <- apply(half.null.results,2,mean)
+
 
 #print the tables
-print.xtable(xtable(fdr.means,digits=3))
-print.xtable(xtable(ndr.means,digits=3))
-
 megan_out <- megan_ints_out(pmat, mvs)
-print.xtable(xtable(megan_out, digits = 3))
-print(megan_out, digits = 3)
+
+
+
+
+out <- rbind(out1, Histogram = megan_out)
+out
+}
+
+res2 <- simout(2)
+res2.5 <- simout(2.5)
+res2.8 <- simout(2.8)
+res3 <- simout(3)
+res3.3 <- simout(3.3)
+
+res2[, c(2,4)] <- res2[, c(2,4)] /10
+res2.5[, c(2,4)] <- res2.5[, c(2,4)] /10
+res2.8[, c(2,4)] <- res2.8[, c(2,4)] /10
+res3[, c(2,4)] <- res3[, c(2,4)] /10
+res3.3[, c(2,4)] <- res3.3[, c(2,4)] /10
+res2
+res2.5
+res2.8
+res3
+res3.3
+
+
 ## --------------------------# SUPPLEMENTARY 2 #------------------------------------- #
 #  Vary the proportion of 'half-null' hypotheses.  Make them challenging.
 # i.e. - mualt=(3,3), and halfnull 1 - (0,4), halfnull 2 - (4,0), letting rho=0
