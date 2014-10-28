@@ -56,6 +56,7 @@ daisy_voronoi_out <- function(ps, pi0){ # dim(ps)
 
 # ni, d0, s20, mv, mnd, nrep
 ## the last 2 functions are from Megan paper #####
+## ps <- megan.data 
 megan_ints_out <- function(ps, mv){
   n <- dim(ps)[1]/2; n.rep <- dim(ps)[2]; de <- mv[4]; ee <- n - de
   qints <- apply(ps, 2, function(x) qvalue_intersection(pv1=x[1:n], pv2=x[(n+1):(2*n)]))

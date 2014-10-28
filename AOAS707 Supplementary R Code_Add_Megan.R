@@ -11,7 +11,14 @@ library(deldir)
 library(mixfdr)
 library(MASS)
 library(xtable)
-
+source("MeganDaisyRes.R")
+source("estimate_m0s_fn.R")
+source("qvalue_functions.R")
+source("SimulationPvalue_Daisy.R")
+source("SimulationPvalue_Phillips.R")
+source("MeganDaisyRes.R")
+source("normal_sim_pvalues.R")
+library(qvalue)
 #-------------------------------------------------------------------------------------#
 #     PART 1. Functions needed for Voronoi P-value Combination
 #-------------------------------------------------------------------------------------#
@@ -389,11 +396,11 @@ n = 2000 #number of genes for each data set
 p = .1 # number of true alternative signals (alt,alt)
 p1 = .1 #proportion of p-vectors (alt, null)
 p2 = .1 #proportion of p-vectors (null, alt)
-n1 = p*n #number of p-vectors (alt, alt)
-n11 = p1*n #number of p-vectors (alt, null)
-n12 = p2*n #number of p-vectors (null, alt)
-n0 = n*(1-p-p1-p2) # number of null p-vectors
-mualt = 3 #mean of alternative signal
+n1 = p*n #number of p-vectors (alt, alt) m11
+n11 = p1*n #number of p-vectors (alt, null) m10
+n12 = p2*n #number of p-vectors (null, alt) m01
+n0 = n*(1-p-p1-p2) # number of null p-vectors m00
+mualt = 1 #mean of alternative signal
 
 # --------------------------# SUPPLEMENTARY 1 #------------------------------------- #
 # Simulation where mualt=3, and 10% are halfnull  (3,0), 10% are halfnull (0,3) #
@@ -409,23 +416,27 @@ fdr.test.results[,1] = ndr.test.results[,1] = rho
 all.null.results[,1] = half.null.results[,1] = rho
 
 PMod=800
-
-for(i in 1:900)
+pmat <- NULL
+mvs <- c(n0, n12, n11, n1)
+for(i in 1:100)
   {
     #get data
-    set.seed(i)
+    set.seed(i) # i <- 1
     if(i==64)
     {
       set.seed(128) # something strange happens when i=64
     }
     r = rho[i]
-    my.zvals = rbind(mvrnorm(n1,c(mualt,mualt),matrix(c(1,r,r,1),2,2)),
-                      mvrnorm(n11,c(mualt,0),matrix(c(1,r,r,1),2,2)),
-                      mvrnorm(n12,c(0,mualt),matrix(c(1,r,r,1),2,2)),
-                      mvrnorm(n0,c(0,0),matrix(c(1,r,r,1),2,2)))
+    my.zvals = rbind(mvrnorm(n1,c(mualt,mualt),matrix(c(1,r,r,1),2,2)), # m11
+                      mvrnorm(n11,c(mualt,0),matrix(c(1,r,r,1),2,2)), #m10
+                      mvrnorm(n12,c(0,mualt),matrix(c(1,r,r,1),2,2)), # m01
+                      mvrnorm(n0,c(0,0),matrix(c(1,r,r,1),2,2))) # m00
     my.data = 2*pnorm(-abs(my.zvals))
     x.values = my.data[,1]; y.values = my.data[,2]
-    
+    megan.data <- my.data[n+1 - 1:n, ] # m00, m01, m10, m11
+    ps1 <- megan.data[, 1]
+    ps2 <- megan.data[, 2]
+    pmat <- cbind(pmat, c(ps1, ps2))
     #get voronoi tessellation and extract cell areas
     areas = deldir(x.values,y.values,rw=c(0,1,0,1),digits=20,eps=1e-13) 
     tess.areas = areas$summary$dir.area 
@@ -475,7 +486,7 @@ fdr.means = ndr.means = all.null.fdr.means = half.null.fdr.means = matrix(NA,9,6
 colnames(fdr.means) = colnames(ndr.means) = c("rho","Maximum","Euclidean","Summation","De Lichtenberg","Existing")
 colnames(all.null.fdr.means) = colnames(half.null.fdr.means) = c("rho","Maximum","Euclidean","Summation","De Lichtenberg","Existing")
 
-for(i in 0:8){
+for(i in 0){
   temp.low = 100*i+1;   temp.high = 100*(i+1)
   ndr.means[i+1,] = apply(ndr.test.results[temp.low:temp.high,],2,mean)
   fdr.means[i+1,] = apply(fdr.test.results[temp.low:temp.high,],2,mean)
@@ -483,12 +494,16 @@ for(i in 0:8){
   half.null.fdr.means[i+1,] = apply(half.null.results[temp.low:temp.high,],2,mean)
 }
 
+fdr.means[1,]
+ndr.means[1,]*n1
+
 #print the tables
 print.xtable(xtable(fdr.means,digits=3))
 print.xtable(xtable(ndr.means,digits=3))
 
-
-
+megan_out <- megan_ints_out(pmat, mvs)
+print.xtable(xtable(megan_out, digits = 3))
+print(megan_out, digits = 3)
 ## --------------------------# SUPPLEMENTARY 2 #------------------------------------- #
 #  Vary the proportion of 'half-null' hypotheses.  Make them challenging.
 # i.e. - mualt=(3,3), and halfnull 1 - (0,4), halfnull 2 - (4,0), letting rho=0
