@@ -11,6 +11,7 @@ library(deldir)
 library(mixfdr)
 library(MASS)
 library(xtable)
+library(AUC)
 source("MeganDaisyRes.R")
 source("estimate_m0s_fn.R")
 source("qvalue_functions.R")
@@ -77,265 +78,17 @@ BH = function(p.values, alpha=.05)
   return(list(k=k,index=index))
 }
 
-#-------------------------------------------------------------------------------------#
-#     PART 2. Simulations for results presented in manuscript
-#-------------------------------------------------------------------------------------#
-#-------------------------------------------------------------------------------------#
-# simtest: Function that performs analysis on cumulative voronoi areas using mixFdr, and 
-#          outputs quantities of interest to study properties of procedure.
-# INPUTS: cum.areas (vector) = cumulative cell areas, output from CombineVoronoi
-#         index (vector) = index of these areas in terms of original p-value vectors.  
-#                          output from CombiniVoronoi
-#         p (value) = known proportion of 'true alternative hypotheses'.
-#         alpha (value) = nominal level of FDR control
-#         myJ (integer) = parameter to pass to mixFdr, number of assumed distributions.
-#         nnull (value) = parameter to pass to mixFdr, used to distinguish null from 
-#                         alternative empirical distributions
-#         cal (T/F, or value) = parameter to pass to mixFdr, whether to calibrate
-#         P (value) = paramater to pass to misFdr, penalization factor that influences 
-#                     tendency to form one large emprical null.
-#         theo.null (T/F) = parameter to pass to mixFdr, whether to fit theoretical null.
-# OUTPUTS: myfdr (value) = known proportion of false discoveries
-#          mypower (value) = known proportion of correctly discoveried alternative hypotheses (1-ndr) 
-#-------------------------------------------------------------------------------------#
-simtest = function(cum.areas,index,p=.1,alpha=.05,myJ=2,nnull=1,cal=F,P=NA,theo.null=F)
-{
-  n = length(index)
-  cum.areas.nz = cum.areas[cum.areas>0&cum.areas<0.9999683]  #Choose the areas with cumulative sum above 0 and below a cut-off (keeps transformation from going crazy)
-  num.zero = sum(cum.areas==0)
-  t.values = qnorm(cum.areas.nz)    #Transform cumulative areas using standard normal quantile function
-  
-  result = mixFdr(t.values,J=myJ,nearlyNull=nnull,plots=F,P=P,calibrate=cal,theonull=theo.null)#Use mixFDR to find left tail lfdr estimates
-  k = sum(result$FDRLeft<alpha) + num.zero # determine number of rejections
-  
-  # calculate and report known values of 'fdr' and '1-ndr'
-  myfdr = 0; mypower = 0
-  if(k>0){index.sig = index[1:k]
-          myfdr = sum(index.sig>(n*p))/k
-          mypower = sum(index.sig<=(n*p))/(n*p) }                                           
-  return(list(myfdr=myfdr,mypower=mypower))
+## AUC function ####
+
+auc_out <- function(test.vector, lab){
+  lab <- as.factor(lab)
+  roc.out <- roc(1-test.vector, lab)
+  roc.ind <- sum(roc.out$fpr<=.1)
+  roc.min <- roc.out$cutoffs[roc.ind]
+  pauc <- auc(roc.out, min =roc.min)
+  return(pauc)
 }
 
-# Preamble for all simulations
-rho = rep(seq(from=0,to=.8,by=.1),each=100) #vector of values for correlation
-n = 2000 # number of genes
-p = .1 # proportion of true alternative signals
-n1 = p*n # number of true alternative signals for each data set
-n0 = n*(1-p) # number of true null signals for each data set
-
-# -----------------------# Weak alternative simulation #--------------------------------- #
-
-# Note - these simulations are written without using CombineVoronoi, they include all steps 
-# without the function #
-
-mualt <- 2     # set mean of alternative signals
-Pweak <- 300  # set penalization factor to pass to mixFdr
-
-# initialize matrices to store results
-fdr.weak.results = ndr.weak.results = matrix(NA,length(rho),7)
-colnames(fdr.weak.results) = c("alt","rho","E.FDR","M.FDR","S.FDR","DL.FDR","EX.FDR")
-colnames(ndr.weak.results) = c("alt","rho","E.NDR","M.NDR","S.NDR", "DL.NDR","EX.NDR")
-fdr.weak.results[,1] = ndr.weak.results[,1] = mualt
-fdr.weak.results[,2] = ndr.weak.results[,2] = rho
-
-#perform simulations
-for(i in 1:900)
-  {
-    #get data
-    set.seed(i)
-    my.zvals = rbind(mvrnorm(n1,c(mualt,mualt),matrix(c(1,rho[i],rho[i],1),2,2)),mvrnorm(n0,c(0,0),matrix(c(1,rho[i],rho[i],1),2,2)))
-    my.data = 2*pnorm(-abs(my.zvals))
-    x.values = my.data[,1]; y.values = my.data[,2]
-
-    #get voronoi tessellation and extract cell areas
-    areas = deldir(x.values,y.values,rw=c(0,1,0,1),digits=20,eps=1e-13) 
-    tess.areas = areas$summary$dir.area 
-
-    #get rankings and indices
-    distance.E = apply(my.data,1,function(x){sqrt(x[1]^2+x[2]^2)}); rank.E = sort(distance.E,index.return=T)$ix
-    distance.M = apply(my.data,1,max) ; rank.M = sort(distance.M,index.return=T)$ix
-    distance.S = apply(my.data,1,sum); rank.S = sort(distance.S,index.return=T)$ix
-    distance.DL = apply(my.data,1,function(x){prod(x)*(1+(x[1]/.001)^2)*(1+(x[2]/.001)^2)}); rank.DL = sort(distance.DL,index.return=T)$ix
-
-    #get cumulative sums, then myfdr and mypower for each ranking scheme
-    sum.E = cumsum(tess.areas[rank.E]); E.results = simtest(sum.E,rank.E,P=Pweak)
-    sum.M = cumsum(tess.areas[rank.M]); M.results = simtest(sum.M,rank.M,P=Pweak)
-    sum.S = cumsum(tess.areas[rank.S]); S.results = simtest(sum.S,rank.S,P=Pweak)
-    sum.DL = cumsum(tess.areas[rank.DL]); DL.results =simtest(sum.DL,rank.DL,P=Pweak)
-
-    #record results
-    ndr.weak.results[i,3] = E.results$mypower; fdr.weak.results[i,3] = E.results$myfdr
-    ndr.weak.results[i,4]= M.results$mypower; fdr.weak.results[i,4] = M.results$myfdr
-    ndr.weak.results[i,5]  = S.results$mypower; fdr.weak.results[i,5]  = S.results$myfdr
-    ndr.weak.results[i,6] = DL.results$mypower; fdr.weak.results[i,6] = DL.results$myfdr
-
-    #now get fdr and power from using B-H on the maximums (Comparison)
-    max.pvalues = apply(my.data,1,max)
-    max.bh = BH(max.pvalues)$index
-    k = length(max.bh)
-    if(k==0)
-      {
-      fdr.weak.results[i,7] = ndr.weak.results[i,7] = 0
-      }
-    if(k>0)
-      {
-      fdr.weak.results[i,7] = sum(max.bh>n1)/k
-      ndr.weak.results[i,7] = sum(max.bh<=n1)/n1
-      }
-  }
-
-#produce table of results
-ndr.weak.means = fdr.weak.means = matrix(NA,9,7)
-colnames(fdr.weak.means) = colnames(ndr.weak.means) = c("alt","rho","Euclidean","Maximum","De Lichtenberg","Summation","Existing")
-for(i in 0:8)
-{
-  temp.low = 100*i+1;  temp.high = 100*(i+1)
-  ndr.weak.means[i+1,] = apply(ndr.weak.results[temp.low:temp.high,],2,mean)
-  fdr.weak.means[i+1,] = apply(fdr.weak.results[temp.low:temp.high,],2,mean)
-}
-
-#print tables of results
-print.xtable(xtable(fdr.weak.means,digits=3))
-print.xtable(xtable(ndr.weak.means,digits=3))
-
-
-# ---------------# moderate alternative simulation #------------------------- #
-
-mualt <- 3 # set mean of alternative signals
-Pmod <- 800 # set penalization factor to pass to mixFdr
-
-#inilialize matrices to store results
-fdr.mod.results = ndr.mod.results = matrix(NA,length(rho),7)
-colnames(fdr.mod.results) = c("alt","rho","E.FDR","M.FDR","S.FDR","DL.FDR","EX.FDR")
-colnames(ndr.mod.results) = c("alt","rho","E.NDR","M.NDR","S.NDR", "DL.NDR","EX.NDR")
-fdr.mod.results[,1] = ndr.mod.results[,1] = mualt
-fdr.mod.results[,2] = ndr.mod.results[,2] = rho
-
-#perform simulation
-for(i in 1:900)
-  {
-    #get data
-    set.seed(i)
-    my.zvals = rbind(mvrnorm(n1,c(mualt,mualt),matrix(c(1,rho[i],rho[i],1),2,2)),mvrnorm(n0,c(0,0),matrix(c(1,rho[i],rho[i],1),2,2)))
-    my.data = 2*pnorm(-abs(my.zvals))
-    x.values = my.data[,1]; y.values = my.data[,2]
-    
-    #get voronoi tessellation and extract cell areas
-    areas = deldir(x.values,y.values,rw=c(0,1,0,1),digits=20,eps=1e-13) 
-    tess.areas = areas$summary$dir.area 
-    
-    #get rankings and indices
-    distance.E = apply(my.data,1,function(x){sqrt(x[1]^2+x[2]^2)}); rank.E = sort(distance.E,index.return=T)$ix
-    distance.M = apply(my.data,1,max) ; rank.M = sort(distance.M,index.return=T)$ix
-    distance.S = apply(my.data,1,sum); rank.S = sort(distance.S,index.return=T)$ix
-    distance.DL = apply(my.data,1,function(x){prod(x)*(1+(x[1]/.001)^2)*(1+(x[2]/.001)^2)}); rank.DL = sort(distance.DL,index.return=T)$ix
-    
-    #get cumulative sums, then myfdr and mypower for each ranking scheme
-    sum.E = cumsum(tess.areas[rank.E]); E.results = simtest(sum.E,rank.E,P=Pmod)
-    sum.M = cumsum(tess.areas[rank.M]); M.results = simtest(sum.M,rank.M,P=Pmod)
-    sum.S = cumsum(tess.areas[rank.S]); S.results = simtest(sum.S,rank.S,P=Pmod)
-    sum.DL = cumsum(tess.areas[rank.DL]); DL.results =simtest(sum.DL,rank.DL,P=Pmod)
-    
-    #record these results
-    ndr.mod.results[i,3] = E.results$mypower; fdr.mod.results[i,3] = E.results$myfdr
-    ndr.mod.results[i,4]= M.results$mypower; fdr.mod.results[i,4] = M.results$myfdr
-    ndr.mod.results[i,5]  = S.results$mypower; fdr.mod.results[i,5]  = S.results$myfdr
-    ndr.mod.results[i,6] = DL.results$mypower; fdr.mod.results[i,6] = DL.results$myfdr
-  
-    #now get fdr and power from using B-H on the maximums (Comparison)
-    max.pvalues = apply(my.data,1,max)
-    max.bh = BH(max.pvalues)$index
-    k = length(max.bh)
-    fdr.mod.results[i,7] = ndr.mod.results[i,7] = 0
-    if(k>0)
-      {
-      fdr.mod.results[i,7] = sum(max.bh>n1)/k
-      ndr.mod.results[i,7] = sum(max.bh<=n1)/n1
-      }
-}
-
-# produce table of results
-ndr.mod.means = fdr.mod.means = matrix(NA,9,7)
-colnames(fdr.mod.means) = colnames(ndr.mod.means) = c("alt","rho","Euclidean","Maximum","De Lichtenberg","Summation","Existing")
-for(i in 0:8)
-{
-  temp.low = 100*i+1;   temp.high = 100*(i+1)
-  ndr.mod.means[i+1,] = apply(ndr.mod.results[temp.low:temp.high,],2,mean)
-  fdr.mod.means[i+1,] = apply(fdr.mod.results[temp.low:temp.high,],2,mean)
-}
-
-# print tables of results
-print.xtable(xtable(fdr.mod.means,digits=3))
-print.xtable(xtable(ndr.mod.means,digits=3))
-
-# ---------------------------# Strong alternative simulation #------------------------------------- #
-
-mualt <- 4 #set mean of alternative signals
-Pstrong <- 1000# Set penalization factor to pass to mixFdr
-
-#initialize matrices to store results
-fdr.strong.results = ndr.strong.results = matrix(NA,length(rho),7)
-colnames(fdr.strong.results) = c("alt","rho","E.FDR","M.FDR","S.FDR","DL.FDR","EX.FDR")
-colnames(ndr.strong.results) = c("alt","rho","E.NDR","M.NDR","S.NDR", "DL.NDR","EX.NDR")
-fdr.strong.results[,1] = ndr.strong.results[,1] = mualt
-fdr.strong.results[,2] = ndr.strong.results[,2] = rho
-
-for(i in 1:900)
-  {
-    #get data
-    set.seed(i)
-    my.zvals = rbind(mvrnorm(n1,c(mualt,mualt),matrix(c(1,rho[i],rho[i],1),2,2)),mvrnorm(n0,c(0,0),matrix(c(1,rho[i],rho[i],1),2,2)))
-    my.data = 2*pnorm(-abs(my.zvals))
-    x.values = my.data[,1]; y.values = my.data[,2]
-    
-    #get voronoi tessellation and extract cell areas
-    areas = deldir(x.values,y.values,rw=c(0,1,0,1),digits=20,eps=1e-13) 
-    tess.areas = areas$summary$dir.area 
-    
-    #get rankings and indices
-    distance.E = apply(my.data,1,function(x){sqrt(x[1]^2+x[2]^2)}); rank.E = sort(distance.E,index.return=T)$ix
-    distance.M = apply(my.data,1,max) ; rank.M = sort(distance.M,index.return=T)$ix
-    distance.S = apply(my.data,1,sum); rank.S = sort(distance.S,index.return=T)$ix
-    distance.DL = apply(my.data,1,function(x){prod(x)*(1+(x[1]/.001)^2)*(1+(x[2]/.001)^2)}); rank.DL = sort(distance.DL,index.return=T)$ix
-    
-    #get cumulative sums, then myfdr and mypower for each ranking scheme
-    sum.E = cumsum(tess.areas[rank.E]); E.results = simtest(sum.E,rank.E,P=Pstrong)
-    sum.M = cumsum(tess.areas[rank.M]); M.results = simtest(sum.M,rank.M,P=Pstrong)
-    sum.S = cumsum(tess.areas[rank.S]); S.results = simtest(sum.S,rank.S,P=Pstrong)
-    sum.DL = cumsum(tess.areas[rank.DL]); DL.results =simtest(sum.DL,rank.DL,P=Pstrong)
-    
-    #record results
-    ndr.strong.results[i,3] = E.results$mypower; fdr.strong.results[i,3] = E.results$myfdr
-    ndr.strong.results[i,4]= M.results$mypower; fdr.strong.results[i,4] = M.results$myfdr
-    ndr.strong.results[i,5]  = S.results$mypower; fdr.strong.results[i,5]  = S.results$myfdr
-    ndr.strong.results[i,6] = DL.results$mypower; fdr.strong.results[i,6] = DL.results$myfdr
-    
-    #now get fdr and power from using B-H on the maximums (Comparison)
-    max.pvalues = apply(my.data,1,max)
-    max.bh = BH(max.pvalues)$index
-    k = length(max.bh)
-    fdr.strong.results[i,7] = ndr.strong.results[i,7] = 0
-    if(k>0)
-      {
-        fdr.strong.results[i,7] = sum(max.bh>n1)/k
-        ndr.strong.results[i,7] = sum(max.bh<=n1)/n1
-      }
-}
-
-#get a table of results for strong
-ndr.strong.means = fdr.strong.means = matrix(NA,9,7)
-colnames(fdr.strong.means) = colnames(ndr.strong.means) = c("alt","rho","Euclidean","Maximum","De Lichtenberg","Summation","Existing")
-
-for(i in 0:8)
-  {
-    temp.low = 100*i+1;   temp.high = 100*(i+1)
-    ndr.strong.means[i+1,] = apply(ndr.strong.results[temp.low:temp.high,],2,mean)
-    fdr.strong.means[i+1,] = apply(fdr.strong.results[temp.low:temp.high,],2,mean)
-  }
-
-#print results
-print.xtable(xtable(fdr.strongd.means,digits=3))
-print.xtable(xtable(ndr.strong.means,digits=3))
 
 #-------------------------------------------------------------------------------------#
 #     PART 3. Simulations for results presented in supplementary materials
@@ -391,8 +144,9 @@ simtesthalfnull = function(cum.areas,index,p=.1,p1=.1,p2=.1,alpha=.05,myJ=2,nnul
 
 
 # Preamble for all simulations with positive correllation
-#rho = rep(seq(from=0,to=.8,by=.1),each=100)
-rho <- rep(0, 100)
+#rho = rep(seq(from=0,to=.8,by=.1),each=nrep)
+nrep <- 100
+rho <- rep(0, nrep)
 n = 2000 #number of genes for each data set
 p = .1 # number of true alternative signals (alt,alt)
 p1 = .1 #proportion of p-vectors (alt, null)
@@ -412,16 +166,16 @@ PMod=800
 pmat <- NULL
 mvs <- c(n0, n12, n11, n1)
 simout <- function(mualt){
-  fdr.test.results = ndr.test.results = matrix(NA,100,6)
-  all.null.results = half.null.results = matrix(NA,100,6)
+  fdr.test.results = ndr.test.results = matrix(NA,nrep,6)
+  all.null.results = half.null.results = matrix(NA,nrep,6)
   colnames(fdr.test.results) = c("rho","M.FDR","E.FDR","S.FDR","DL.FDR","Ex.FDR")
   colnames(ndr.test.results) = c("rho","M.NDR","E.NDR","S.NDR", "DL.NDR","Ex.NDR")
   colnames(all.null.results) = c("rho","M.allFDR","E.allFDR","S.allFDR","DL.allFDR","Ex.allFDR")
   colnames(half.null.results) = c("rho","M.halfFDR","E.halfFDR","S.halfFDR", "DL.halfFDR","Ex.halfFDR")
   fdr.test.results[,1] = ndr.test.results[,1] = rho
   all.null.results[,1] = half.null.results[,1] = rho
-  
-for(i in 1:100)
+  pauc.E <- pauc.M <- pauc.S <- pauc.DL <- pauc.Ex <- NULL
+for(i in 1:nrep)
   {
     #get data
     set.seed(i) # i <- 1
@@ -456,6 +210,13 @@ for(i in 1:100)
     sum.S = cumsum(tess.areas[rank.S]); S.results = simtesthalfnull(sum.S,rank.S,P=800)
     sum.DL = cumsum(tess.areas[rank.DL]); DL.results =simtesthalfnull(sum.DL,rank.DL,P=800)
   
+    # obtain pAUC of those scores 
+    lab <- c( rep(1, n1), rep(0, n-n1))
+    pauc.E[i] <- auc_out(sum.E, lab)
+    pauc.M[i] <- auc_out(sum.M, lab)
+    pauc.S[i] <- auc_out(sum.S, lab)
+    pauc.DL[i] <- auc_out(sum.DL, lab)
+    
     #record results
     ndr.test.results[i,3] = E.results$mypower; fdr.test.results[i,3] = E.results$myfdr
     ndr.test.results[i,2]= M.results$mypower; fdr.test.results[i,2] = M.results$myfdr
@@ -469,6 +230,7 @@ for(i in 1:100)
     
     # get comparison results using existing method
     max.pvalues = apply(my.data,1,max)
+    pauc.Ex[i] <- auc_out(max.pvalues, lab) 
     max.bh = BH(max.pvalues)$index
     k = length(max.bh)
     if(k==0)
@@ -490,7 +252,7 @@ names(fdr.means) = names(ndr.means) = c("rho","Maximum","Euclidean","Summation",
 names(all.null.fdr.means) = names(half.null.fdr.means) = c("rho","Maximum","Euclidean","Summation","De Lichtenberg","Existing")
 # 
 # for(i in 0){
-#   temp.low = 100*i+1;   temp.high = 100*(i+1)
+#   temp.low = nrep*i+1;   temp.high = nrep*(i+1)
 #   ndr.means[i+1,] = apply(ndr.test.results[temp.low:temp.high,],2,mean)
 #   fdr.means[i+1,] = apply(fdr.test.results[temp.low:temp.high,],2,mean)
 #   all.null.fdr.means[i+1,] = apply(all.null.results[temp.low:temp.high,],2,mean)
@@ -505,6 +267,21 @@ fdr.means <-  apply(fdr.test.results,2,mean)
 fdr.se <-  apply(fdr.test.results,2,sd)/10
 out1 <- cbind(ndr.means, ndr.se, fdr.means, fdr.se)
 rownames(out1) <- c("rho", "Maximum", "Euclidean", "Summation", "De Lichtenberg", "Existing")
+
+pauc.E.means <- mean(pauc.E)
+pauc.E.se <- sd(pauc.E)/10
+pauc.M.means <- mean(pauc.M)
+pauc.M.se <- sd(pauc.M)/10
+pauc.S.means <- mean(pauc.S)
+pauc.S.se <- sd(pauc.S)/10
+pauc.DL.means <- mean(pauc.DL)
+pauc.DL.se <- sd(pauc.DL)/10
+pauc.Ex.means <- mean(pauc.Ex)
+pauc.Ex.se <- sd(pauc.Ex)/10
+
+out2 <- cbind(pauc.mean = c(0,pauc.M.means, pauc.E.means, pauc.S.means, pauc.DL.means,pauc.Ex.means ), 
+          pauc.se = c(0,pauc.M.se, pauc.E.se, pauc.S.se, pauc.DL.se,pauc.Ex.se ))
+out3 <- cbind(out1, out2)
 # all.null.fdr.means <- apply(all.null.results,2,mean)
 # half.null.fdr.means <- apply(half.null.results,2,mean)
 
@@ -515,7 +292,7 @@ megan_out <- megan_ints_out(pmat, mvs)
 
 
 
-out <- rbind(out1, Histogram = megan_out)
+out <- rbind(out3, Histogram = megan_out)
 out
 }
 
@@ -536,94 +313,3 @@ res2.8
 res3
 res3.3
 
-
-## --------------------------# SUPPLEMENTARY 2 #------------------------------------- #
-#  Vary the proportion of 'half-null' hypotheses.  Make them challenging.
-# i.e. - mualt=(3,3), and halfnull 1 - (0,4), halfnull 2 - (4,0), letting rho=0
-##----------------------------------------------------------------------------------- ##
-
-#preliminaries
-halfnull1 <- rep(seq(from=.02,to=.14,by=.02),each=100)
-halfnull2 <- rep(seq(from=0.02,to=.14,by=.02),each=100)
-PMod <- 800
-r <- 0 
-
-#allocate space to store results
-fdr.test.results = ndr.test.results = matrix(NA,700,6)
-colnames(fdr.test.results) = c("propHalfNull","M.FDR","E.FDR","S.FDR","DL.FDR","Ex.FDR")
-colnames(ndr.test.results) = c("propHalfNull","M.NDR","E.NDR","S.NDR", "DL.NDR","Ex.NDR")
-fdr.test.results[,1] = ndr.test.results[,1] = 2*halfnull1
-
-set.seed(4445)
-# simulation
-for(i in 1:700)
-  {
-    if(i==227)
-    {
-      i= 2*i #something strange happens when i=227
-    }
-    n11 = halfnull1[i]*n
-    n12 = halfnull2[i]*n
-    n0 = n - n1 - n11 - n12
-    #get data
-    my.zvals = rbind(matrix(rnorm(2*n1,mean=3),n1,2),
-                      cbind(rnorm(n11,mean=4),rnorm(n11,mean=0)),
-                      cbind(rnorm(n11,mean=0),rnorm(n11,mean=4)),
-                      matrix(rnorm(2*n0),n0,2))
-    my.data = 2*pnorm(-abs(my.zvals))
-    x.values = 20*my.data[,1]; y.values = 10*my.data[,2]
-  
-    #get voronoi tessellation and extract cell areas
-    areas = deldir(x.values,y.values,rw=c(0,10,0,10),digits=20,eps=1e-13) 
-    tess.areas = areas$summary$dir.area/400 
-  
-    #get rankings and indices
-    distance.E = apply(my.data,1,function(x){sqrt(x[1]^2+x[2]^2)}); rank.E = sort(distance.E,index.return=T)$ix
-    distance.M = apply(my.data,1,max) ; rank.M = sort(distance.M,index.return=T)$ix
-    distance.S = apply(my.data,1,sum); rank.S = sort(distance.S,index.return=T)$ix
-    distance.DL = apply(my.data,1,function(x){prod(x)*(1+(x[1]/.001)^2)*(1+(x[2]/.001)^2)}); rank.DL = sort(distance.DL,index.return=T)$ix
-    
-    #get cumulative sums, then myfdr and mypower for each ranking scheme
-    sum.E = cumsum(tess.areas[rank.E]); E.results = simtesthalfnull(sum.E,rank.E,P=800)
-    sum.M = cumsum(tess.areas[rank.M]); M.results = simtesthalfnull(sum.M,rank.M,P=800)
-    sum.S = cumsum(tess.areas[rank.S]); S.results = simtesthalfnull(sum.S,rank.S,P=800)
-    sum.DL = cumsum(tess.areas[rank.DL]); DL.results =simtesthalfnull(sum.DL,rank.DL,P=800)
-  
-    #record results  
-    ndr.test.results[i,3] = E.results$mypower; fdr.test.results[i,3] = E.results$myfdr
-    ndr.test.results[i,2]= M.results$mypower; fdr.test.results[i,2] = M.results$myfdr
-    ndr.test.results[i,4]  = S.results$mypower; fdr.test.results[i,4]  = S.results$myfdr
-    ndr.test.results[i,5] = DL.results$mypower; fdr.test.results[i,5] = DL.results$myfdr
-    
-    #try out competitors method
-    max.pvalues = apply(my.data,1,max)
-    max.bh = BH(max.pvalues)$index
-    k = length(max.bh)
-  if(k==0)
-  {
-    all.null.results[i,6] = fdr.test.results[i,6] = half.null.results[i,6] = ndr.test.results[i,6] = 0
-  }
-  if(k>0)
-  {
-    fdr.test.results[i,6] = sum(max.bh>n1)/k
-    ndr.test.results[i,6] = sum(max.bh<=n1)/n1
-  }
-}
-
-# get table of means
-fdr.means = ndr.means = all.null.fdr.means = half.null.fdr.means = matrix(NA,7,6)
-colnames(fdr.means) = colnames(ndr.means) = c("rho","Maximum","Euclidean","Summation","De Lichtenberg","Existing")
-colnames(all.null.fdr.means) = colnames(half.null.fdr.means) = c("rho","Maximum","Euclidean","Summation","De Lichtenberg","Existing")
-
-for(i in 0:6)
-{
-  temp.low = 100*i+1;   temp.high = 100*(i+1)
-  ndr.means[i+1,] = apply(ndr.test.results[temp.low:temp.high,],2,mean)
-  fdr.means[i+1,] = apply(fdr.test.results[temp.low:temp.high,],2,mean)
-  all.null.fdr.means[i+1,] = apply(all.null.results[temp.low:temp.high,],2,mean)
-  half.null.fdr.means[i+1,] = apply(half.null.results[temp.low:temp.high,],2,mean)
-}
-
-#print table of means
-print.xtable(xtable(fdr.means,digits=3))
-print.xtable(xtable(ndr.test.means,digits=3))

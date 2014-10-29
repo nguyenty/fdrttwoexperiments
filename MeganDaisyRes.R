@@ -1,5 +1,5 @@
 # # auc
-# library("AUC")
+ library("AUC")
 # pauc <- function(test.vector, lab){
 #   roc.out <- roc(1-test.vector, lab)
 #   roc.ind <- sum(roc.out$fpr<=.1)
@@ -8,6 +8,15 @@
 #   return(pauc_out)
 # }
 library(plyr)
+auc_out <- function(test.vector, lab){
+  lab <- as.factor(lab)
+  roc.out <- roc(1-test.vector, lab)
+  roc.ind <- sum(roc.out$fpr<=.1)
+  roc.min <- roc.out$cutoffs[roc.ind]
+  pauc <- auc(roc.out, min =roc.min)
+  return(pauc)
+}
+
 ### First two functions are for simulation in daisy paper#####
 daisy_ints_out <- function(ps, pi0){
   n <- dim(ps)[1]/2; n.rep <- dim(ps)[2]; ee <- round(n*pi0); de <- n - ee
@@ -17,15 +26,15 @@ daisy_ints_out <- function(ps, pi0){
     R.t <- sum(x <= 0.05)
     S.t <- R.t - V.t
     FDR.t <- V.t/max(R.t, 1)
-#     PAUC.t <- pauc(x, lab=as.factor(c(rep(1, de), rep(0, ee))))
-    return(c(S.t = S.t, FDR.t = FDR.t))
+    PAUC.t <- auc_out(x, lab=as.factor(c(rep(1, de), rep(0, ee))))
+    return(c(S.t = S.t, FDR.t = FDR.t, PAUC.t = PAUC.t))
   })
   meanS <- mean(res[1,]); sdmeanS <- sd(res[1,])/sqrt(n.rep)  
   meanFDR <- mean(res[2,]); sdmeanFDR <-sd(res[2,])/sqrt(n.rep)
-#   meanPAUC <- mean(res[3,]); sdmeanPAUC <-sd(res[3,])/sqrt(n)
+   meanPAUC <- mean(res[3,]); sdmeanPAUC <-sd(res[3,])/sqrt(n)
   
   res2 <- c(meanS = meanS, sdmeanS = sdmeanS, meanFDR = meanFDR, 
-            sdmeanFDR = sdmeanFDR)
+            sdmeanFDR = sdmeanFDR, meanPAUC = meanPAUC, sdmeanPAUC = sdmeanPAUC)
   res2
 }
 
@@ -65,21 +74,21 @@ megan_ints_out <- function(ps, mv){
     R.t <- sum(x <= 0.05)
     S.t <- R.t - V.t
     FDR.t <- V.t/max(R.t, 1)
-    #     PAUC.t <- pauc(x, lab=as.factor(c(rep(1, de), rep(0, ee))))
-    return(c(S.t = S.t, FDR.t = FDR.t))
+    PAUC.t <- auc_out(x, lab=as.factor(c( rep(0, ee), rep(1, de))))
+    return(c(S.t = S.t, FDR.t = FDR.t, PAUC.t = PAUC.t))
   })
   meanS <- mean(res[1,]); sdmeanS <- sd(res[1,])/sqrt(n.rep)  
   meanFDR <- mean(res[2,]); sdmeanFDR <-sd(res[2,])/sqrt(n.rep)
-  #   meanPAUC <- mean(res[3,]); sdmeanPAUC <-sd(res[3,])/sqrt(n)
+  meanPAUC <- mean(res[3,]); sdmeanPAUC <-sd(res[3,])/sqrt(n)
   
   res2 <- c(meanS = meanS, sdmeanS = sdmeanS, meanFDR = meanFDR, 
-            sdmeanFDR = sdmeanFDR)
+            sdmeanFDR = sdmeanFDR, meanPAUC = meanPAUC, sdmeanPAUC = sdmeanPAUC)
   res2
 }
 
 
 
-megan_voronoi_out <- function(ps, mv){ # dim(ps) mv <- mvs
+ megan_voronoi_out <- function(ps, mv){ # dim(ps) mv <- mvs
   n <- dim(ps)[1]/2; n.rep <- dim(ps)[2]; de <- mv[4]; ee <- n - de
   voronoi <- apply(ps, 2, function(x) CombineVoronoi(x.values=x[1:n], y.values=x[(n+1):(2*n)]))
   res <- t(laply(1:n.rep, function(i) { # i <- 1
