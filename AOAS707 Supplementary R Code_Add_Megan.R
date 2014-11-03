@@ -165,7 +165,7 @@ mualt = 3 #mean of alternative signal
 PMod=800
 pmat <- NULL
 mvs <- c(n0, n12, n11, n1)
-simout <- function(mualt){
+simout <- function(mualt, n){
   fdr.test.results = ndr.test.results = matrix(NA,nrep,6)
   all.null.results = half.null.results = matrix(NA,nrep,6)
   colnames(fdr.test.results) = c("rho","M.FDR","E.FDR","S.FDR","DL.FDR","Ex.FDR")
@@ -299,7 +299,7 @@ out
 res2 <- simout(2)
 res2.5 <- simout(2.5)
 res2.8 <- simout(2.8)
-res3 <- simout(3)
+res3 <- simout(3, 2000)
 res3.3 <- simout(3.3)
 
 res2[, c(2,4)] <- res2[, c(2,4)] /10
