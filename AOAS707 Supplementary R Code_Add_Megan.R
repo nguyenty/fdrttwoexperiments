@@ -79,16 +79,18 @@ BH = function(p.values, alpha=.05)
 }
 
 ## AUC function ####
-
+test.vector <- sum.E
+hist(sum.E, nclass = 100)
+lab
 auc_out <- function(test.vector, lab){
   lab <- as.factor(lab)
-  roc.out <- roc(1-test.vector, lab)
-  roc.ind <- sum(roc.out$fpr<=.1)
+  roc.out <- roc(1-test.vector, lab) # plot(roc.out)
+  roc.ind <- sum(roc.out$fpr<=.05)
   roc.min <- roc.out$cutoffs[roc.ind]
   pauc <- auc(roc.out, min =roc.min)
   return(pauc)
 }
-
+?auc
 
 #-------------------------------------------------------------------------------------#
 #     PART 3. Simulations for results presented in supplementary materials
@@ -145,7 +147,7 @@ simtesthalfnull = function(cum.areas,index,p=.1,p1=.1,p2=.1,alpha=.05,myJ=2,nnul
 
 # Preamble for all simulations with positive correllation
 #rho = rep(seq(from=0,to=.8,by=.1),each=nrep)
-nrep <- 100
+nrep <- 10
 rho <- rep(0, nrep)
 n = 2000 #number of genes for each data set
 p = .1 # number of true alternative signals (alt,alt)
